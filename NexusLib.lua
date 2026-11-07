@@ -1,6 +1,5 @@
 --=====================================================================
 --  NEXUS UI LIBRARY  •  v5.0.0  •  Pure Exploit Library
---  Features: Auto-Settings, Presets Tab, Themes, Notifications
 --=====================================================================
 
 local TweenService     = game:GetService("TweenService")
