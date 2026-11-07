@@ -1,6 +1,5 @@
 --=====================================================================
---  NEXUS UI LIBRARY  •  v4.0.0  •  Pure Exploit Library
---  Features: Auto-pinned Settings tab, Shape Morphing, Bottom Sheet
+--  NEXON UI LIBRARY  •  v4.0.0 beta  •  Pure Exploit 
 --=====================================================================
 
 local TweenService     = game:GetService("TweenService")
@@ -109,7 +108,7 @@ function Library:_Build()
 	local cfg = self.Config
 
 	local gui = Instance.new("ScreenGui")
-	gui.Name = "NexusUI"
+	gui.Name = "Nexon UI"
 	gui.ResetOnSpawn = false
 	gui.IgnoreGuiInset = true
 	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
