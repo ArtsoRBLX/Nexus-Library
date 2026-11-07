@@ -1,13 +1,13 @@
 --=====================================================================
---  NEXUS UI LIBRARY  •  v4.3.0 beta •  Pure Exploit Library
---  Features: Tiny Slide-In Notifications, Presets, Themes
+--  NEXUS UI LIBRARY  •  v5.0.0  •  Pure Exploit Library
+--  Features: Auto-Settings, Presets Tab, Themes, Notifications
 --=====================================================================
 
 local TweenService     = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local Players          = game:GetService("Players")
 
-local Library = { Version = "4.3.0", Flags = {}, Elements = {}, Windows = {}, SavedPresets = {} }
+local Library = { Version = "5.0.0", Flags = {}, Elements = {}, Windows = {}, SavedPresets = {} }
 
 --=========================  THEMES  ===================================
 Library.Themes = {
@@ -268,29 +268,25 @@ function Library:Notify(cfg)
 	local accent = cfg.Color or T.Accent
 	local dur = cfg.Duration or 4
 
-	-- Tiny notification container
 	local group = Create("CanvasGroup", {
-		Size = UDim2.new(1, 0, 0, 60), -- Tiny fixed height
+		Size = UDim2.new(1, 0, 0, 60),
 		BackgroundColor3 = T.Surface,
 		BackgroundTransparency = 0.05,
 		GroupTransparency = 1,
-		Position = UDim2.new(1, 300, 0, 0), -- Start off-screen to the right
+		Position = UDim2.new(1, 300, 0, 0),
 		ZIndex = 300,
 		Parent = mainWin.NotifyHolder
 	})
 	Corner(group, 8)
 	Stroke(group, accent, 1.5, 0.3)
 
-	-- Slide in animation
 	Tween(group, { Position = UDim2.new(0, 0, 0, 0), GroupTransparency = 0 }, 0.4, "Snappy")
 
-	-- Header (Title and close)
 	local head = Create("Frame", { Position = UDim2.fromOffset(12, 10), Size = UDim2.new(1, -24, 0, 16), BackgroundTransparency = 1, Parent = group })
 	local dot = Create("Frame", { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 0, 0.5, 0), Size = UDim2.fromOffset(6, 6), BackgroundColor3 = accent, BorderSizePixel = 0, Parent = head })
 	Corner(dot, 3)
 	Create("TextLabel", { Position = UDim2.fromOffset(12, 0), Size = UDim2.new(1, -20, 1, 0), BackgroundTransparency = 1, Text = cfg.Title or "Notification", TextColor3 = T.Text, TextSize = 13, Font = T.FontBold, TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = head })
 
-	-- Body text
 	Create("TextLabel", {
 		Position = UDim2.fromOffset(12, 30),
 		Size = UDim2.new(1, -24, 0, 18),
@@ -304,7 +300,6 @@ function Library:Notify(cfg)
 		Parent = group
 	})
 
-	-- Draining Progress Bar (bottom)
 	local prog = Create("Frame", {
 		AnchorPoint = Vector2.new(0, 1),
 		Position = UDim2.new(0, 0, 1, 0),
@@ -320,16 +315,13 @@ function Library:Notify(cfg)
 
 	Tween(fillProg, { Size = UDim2.fromScale(0, 1) }, dur, "Linear")
 
-	-- Click to dismiss
 	local clickBtn = Create("TextButton", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Text = "", Parent = group })
 	clickBtn.MouseButton1Click:Connect(function()
-		-- Slide out and destroy immediately
 		Tween(group, { Position = UDim2.new(1, 300, 0, 0), GroupTransparency = 1 }, 0.3, "Smooth")
 		task.wait(0.3)
 		group:Destroy()
 	end)
 
-	-- Auto destroy when progress finishes
 	task.delay(dur, function()
 		if group and group.Parent then
 			Tween(group, { Position = UDim2.new(1, 300, 0, 0), GroupTransparency = 1 }, 0.3, "Smooth")
@@ -363,25 +355,21 @@ function Library:_Build()
 	if not ok or not gui.Parent then gui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui") end
 	self.Gui = gui
 
-	-- Shadow / Glow
 	local shadow = Create("Frame", { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset((cfg.Width or 700) + 20, (cfg.Height or 480) + 20), BackgroundColor3 = T.Accent2, BackgroundTransparency = 0.85, BorderSizePixel = 0, ZIndex = 99, Parent = gui })
 	Corner(shadow, 30)
 	self.Shadow = shadow
 
-	-- Main Frame
 	local main = Create("Frame", { Name = "Main", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(cfg.Width or 700, cfg.Height or 480), BackgroundColor3 = T.Background, BorderSizePixel = 0, ClipsDescendants = true, ZIndex = 100, Parent = gui })
 	self.Main = main
 	Corner(main, 20)
 	local ms = Stroke(main, T.Accent, 1.5, 0.2)
 	Create("UIGradient", { Color = G.Neon, Parent = ms })
 
-	-- Background
 	local bgImg = Create("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = T.Background, BorderSizePixel = 0, ZIndex = 1, Parent = main })
 	Corner(bgImg, 20)
 	Create("UIGradient", { Rotation = 135, Color = T.WindowGrad, Parent = bgImg })
 	self.BgImg = bgImg
 
-	-- Title Bar
 	local titleBar = Create("Frame", { Name = "TitleBar", Size = UDim2.new(1, 0, 0, 56), BackgroundTransparency = 1, ZIndex = 5, Parent = main })
 	local logo = Create("Frame", { Position = UDim2.fromOffset(16, 14), Size = UDim2.fromOffset(28, 28), BackgroundColor3 = T.Accent, BorderSizePixel = 0, ZIndex = 5, Parent = titleBar })
 	Corner(logo, 8)
