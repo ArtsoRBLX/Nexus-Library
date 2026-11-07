@@ -1,12 +1,13 @@
 --=====================================================================
---  NEXUS UI LIBRARY  •  v5.0.0  •  Pure Exploit Library
+--  NEXUS UI LIBRARY  •  v5.0.1  •  Pure Exploit Library
+--  Features: Auto-Settings, Presets Tab, Themes, Notifications
 --=====================================================================
 
 local TweenService     = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local Players          = game:GetService("Players")
 
-local Library = { Version = "5.0.0", Flags = {}, Elements = {}, Windows = {}, SavedPresets = {} }
+local Library = { Version = "5.0.1", Flags = {}, Elements = {}, Windows = {}, SavedPresets = {} }
 
 --=========================  THEMES  ===================================
 Library.Themes = {
@@ -170,17 +171,18 @@ end
 --=========================  PRESET SYSTEM  ============================
 function Library:ShowPresetModal(title, code)
 	local T = Library.Theme
-	local modalGui = self.Windows[1].Gui
+	local targetGui = (self.Windows and self.Windows[1] and self.Windows[1].Gui) or self.Gui
+	if not targetGui then return end
 	
 	local overlay = Create("TextButton", {
 		Name = "PresetModalOverlay", Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(0,0,0),
-		BackgroundTransparency = 0.5, Text = "", ZIndex = 500, Parent = modalGui
+		BackgroundTransparency = 0.5, Text = "", ZIndex = 500, Parent = targetGui
 	})
 	
 	local modal = Create("Frame", {
 		Name = "PresetModal", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
 		Size = UDim2.fromOffset(500, 300), BackgroundColor3 = T.Background, BorderSizePixel = 0,
-		ClipsDescendants = true, ZIndex = 501, Parent = modalGui
+		ClipsDescendants = true, ZIndex = 501, Parent = targetGui
 	})
 	Corner(modal, 12)
 	Stroke(modal, T.Accent, 1.5, 0.2)
@@ -243,7 +245,7 @@ end
 function Library:Notify(cfg)
 	cfg = cfg or {}
 	local T = Library.Theme
-	local mainWin = self.Windows[1]
+	local mainWin = (self.Windows and self.Windows[1]) or self
 	if not mainWin or not mainWin.Gui then return end
 
 	if not mainWin.NotifyHolder then
@@ -1146,5 +1148,25 @@ function Library:Destroy()
 	self.Windows = {}
 	self.Flags = {}
 end
+
+--=====================================================================
+--  HOW TO USE THIS LIBRARY AS A SCRIPT (For people who just want to paste)
+--=====================================================================
+-- If you paste this whole file directly into an executor and press Execute, 
+-- it will just return the table and do nothing. If you want to test it, 
+-- uncomment the code below.
+
+--[[
+local TestWindow = Library:CreateWindow({ Title = "Nexus Test", Subtitle = "Working!" })
+local TestTab = TestWindow:Tab("Main", "🏠")
+local TestSec = TestTab:Section({ Name = "Test Section", Side = "Left" })
+
+TestSec:Button({ 
+	Name = "Say Hello", 
+	Callback = function() 
+		TestWindow:Notify({ Title = "Success", Text = "The UI works perfectly!", Color = Library.Theme.Success }) 
+	end 
+})
+--]]
 
 return Library
