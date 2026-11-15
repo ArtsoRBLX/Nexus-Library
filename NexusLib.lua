@@ -1,13 +1,12 @@
 --=====================================================================
---  NEXUS UI LIBRARY  •  v7.5.0  •  Auto-Executing Library
---  Includes Demo, Quick Buttons, Color Picker, Presets, Themes
+--  NEXUS UI LIBRARY  •  v7.5.1  •  Fixed Global Environment Error
 --=====================================================================
 
 local TweenService     = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local Players          = game:GetService("Players")
 
-local Library = { Version = "7.5.0", Flags = {}, Elements = {}, Windows = {}, SavedPresets = {} }
+local Library = { Version = "7.5.1", Flags = {}, Elements = {}, Windows = {}, SavedPresets = {} }
 
 --=========================  THEMES  ===================================
 Library.Themes = {
@@ -370,7 +369,6 @@ function Library:_Build()
 	Create("UIListLayout", { Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder, Parent = tabArea })
 	self.TabArea = tabArea
 
-	-- We need 3 bottom areas now (Quick Buttons, Presets, Settings)
 	local bottomArea1 = Create("Frame", { Name = "BottomArea1", Position = UDim2.new(0, 10, 1, -130), Size = UDim2.new(1, -20, 0, 36), BackgroundTransparency = 1, ZIndex = 5, Parent = rail })
 	Create("UIListLayout", { Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder, Parent = bottomArea1 })
 	self.BottomArea1 = bottomArea1
@@ -1323,59 +1321,12 @@ function Library:Destroy()
 end
 
 --=====================================================================
---  AUTO-EXECUTION DEMO (Makes it work when pasted directly)
+--  GLOBAL ENVIRONMENT FIX (This fixes the KVGD error)
 --=====================================================================
--- This block allows the library to instantly show a UI when pasted. 
--- If you are a developer using this as a library, you can ignore this 
--- or delete everything from here to the bottom.
+-- Other scripts often look for UI Libraries in _G or getgenv(). 
+-- This makes sure your UI is available globally.
 
-local DemoWindow = Library:CreateWindow({
-    Title = "NEXUS UI",
-    Subtitle = "Demo Mode",
-    IconId = 6031097226
-})
+getgenv().NexusUI = Library
+_G.NexusUI = Library
 
-local DemoTab = DemoWindow:Tab("Demo", "🏠")
-local DemoSec = DemoTab:Section({ Name = "Test Features", Side = "Left" })
-local QuickSec = DemoTab:Section({ Name = "Quick Buttons", Side = "Right" })
-
--- Test Toggle (Will show up in Quick Buttons tab automatically)
-QuickSec:Toggle({
-    Name = "Quick Toggle",
-    Icon = "⚡",
-    Flag = "quick_toggle",
-    Callback = function(val)
-        print("Quick Toggle is now:", val)
-    end
-})
-
--- Test Button
-DemoSec:Button({
-    Name = "Test Notification",
-    Callback = function()
-        DemoWindow:Notify({
-            Title = "Success",
-            Text = "The UI is functioning perfectly!",
-            Color = Library.Theme.Success
-        })
-    end
-})
-
--- Test Color Picker
-DemoSec:ColorPicker({
-    Name = "Test Color",
-    Default = Color3.fromRGB(0, 240, 255),
-    Callback = function(c)
-        print("Color picked:", c)
-    end
-})
-
-DemoWindow:Notify({
-    Title = "NEXUS LOADED",
-    Text = "Library is active. Try the Quick Buttons!",
-    Color = Library.Theme.Accent,
-    Duration = 5
-})
-
--- Return the Library so developers can still use it
 return Library
