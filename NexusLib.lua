@@ -1,13 +1,13 @@
 --=====================================================================
---  NEXUS UI LIBRARY  •  v5.0.1  •  Pure Exploit Library
---  Features: Auto-Settings, Presets Tab, Themes, Notifications
+--  NEXUS UI LIBRARY  •  v7.5.0  •  Auto-Executing Library
+--  Includes Demo, Quick Buttons, Color Picker, Presets, Themes
 --=====================================================================
 
 local TweenService     = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local Players          = game:GetService("Players")
 
-local Library = { Version = "5.0.1", Flags = {}, Elements = {}, Windows = {}, SavedPresets = {} }
+local Library = { Version = "7.5.0", Flags = {}, Elements = {}, Windows = {}, SavedPresets = {} }
 
 --=========================  THEMES  ===================================
 Library.Themes = {
@@ -110,6 +110,19 @@ local function Round(n, dec)
 	return math.floor(n * m + 0.5) / m
 end
 
+local function Ripple(parent, x, y, color)
+	if not parent or not parent.Parent then return end
+	local rip = Create("Frame", {
+		AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(x, y),
+		Size = UDim2.fromOffset(0, 0), BackgroundColor3 = color or Library.Theme.Accent,
+		BackgroundTransparency = 0.55, BorderSizePixel = 0, ZIndex = 999, Parent = parent,
+	})
+	Corner(rip, 999)
+	local target = parent.AbsoluteSize.X * 2.4
+	Tween(rip, { Size = UDim2.fromOffset(target, target), BackgroundTransparency = 1 }, 0.55)
+	task.delay(0.56, function() if rip then rip:Destroy() end end)
+end
+
 --=========================  SERIALIZATION  ============================
 local function Serialize(tbl)
 	local lines = { "return {" }
@@ -171,7 +184,8 @@ end
 --=========================  PRESET SYSTEM  ============================
 function Library:ShowPresetModal(title, code)
 	local T = Library.Theme
-	local targetGui = (self.Windows and self.Windows[1] and self.Windows[1].Gui) or self.Gui
+	local targetGui = self.Gui
+	for _, w in pairs(self.Windows) do if w.Gui and w.Gui.Parent then targetGui = w.Gui break end end
 	if not targetGui then return end
 	
 	local overlay = Create("TextButton", {
@@ -213,10 +227,7 @@ function Library:ShowPresetModal(title, code)
 	local closeBtn = Create("TextButton", { Size = UDim2.new(0, 100, 1, 0), BackgroundColor3 = T.Danger, BackgroundTransparency = 0.2, Text = "Close", TextColor3 = Color3.new(1,1,1), TextSize = 12, Font = T.FontBold, AutoButtonColor = false, Parent = btnRow })
 	Corner(closeBtn, 6)
 	
-	local function closeModal()
-		overlay:Destroy()
-		modal:Destroy()
-	end
+	local function closeModal() overlay:Destroy(); modal:Destroy() end
 	
 	copyBtn.MouseButton1Click:Connect(function()
 		if setclipboard then setclipboard(code) end
@@ -231,9 +242,7 @@ function Library:ShowPresetModal(title, code)
 				writefile("NexusPresets/" .. title .. ".txt", code)
 			end)
 			fileBtn.Text = ok and "Saved!" or "Error"
-		else
-			fileBtn.Text = "Unsupported"
-		end
+		else fileBtn.Text = "Unsupported" end
 		task.delay(1.5, function() if fileBtn and fileBtn.Parent then fileBtn.Text = "Save to File" end end)
 	end)
 	
@@ -245,39 +254,23 @@ end
 function Library:Notify(cfg)
 	cfg = cfg or {}
 	local T = Library.Theme
-	local mainWin = (self.Windows and self.Windows[1]) or self
-	if not mainWin or not mainWin.Gui then return end
+	local mainWin
+	for _, w in pairs(self.Windows) do if w.Gui and w.Gui.Parent then mainWin = w break end end
+	if not mainWin then return end
 
 	if not mainWin.NotifyHolder then
 		mainWin.NotifyHolder = Create("Frame", {
-			AnchorPoint = Vector2.new(1, 0),
-			Position = UDim2.new(1, -16, 0, 16),
-			Size = UDim2.fromOffset(260, 0),
-			AutomaticSize = Enum.AutomaticSize.Y,
-			BackgroundTransparency = 1,
-			ZIndex = 300,
-			Parent = mainWin.Gui,
+			AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -16, 0, 16),
+			Size = UDim2.fromOffset(260, 0), AutomaticSize = Enum.AutomaticSize.Y,
+			BackgroundTransparency = 1, ZIndex = 300, Parent = mainWin.Gui,
 		})
-		Create("UIListLayout", {
-			Padding = UDim.new(0, 8),
-			SortOrder = Enum.SortOrder.LayoutOrder,
-			HorizontalAlignment = Enum.HorizontalAlignment.Right,
-			Parent = mainWin.NotifyHolder
-		})
+		Create("UIListLayout", { Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder, HorizontalAlignment = Enum.HorizontalAlignment.Right, Parent = mainWin.NotifyHolder })
 	end
 
 	local accent = cfg.Color or T.Accent
 	local dur = cfg.Duration or 4
 
-	local group = Create("CanvasGroup", {
-		Size = UDim2.new(1, 0, 0, 60),
-		BackgroundColor3 = T.Surface,
-		BackgroundTransparency = 0.05,
-		GroupTransparency = 1,
-		Position = UDim2.new(1, 300, 0, 0),
-		ZIndex = 300,
-		Parent = mainWin.NotifyHolder
-	})
+	local group = Create("CanvasGroup", { Size = UDim2.new(1, 0, 0, 60), BackgroundColor3 = T.Surface, BackgroundTransparency = 0.05, GroupTransparency = 1, Position = UDim2.new(1, 300, 0, 0), ZIndex = 300, Parent = mainWin.NotifyHolder })
 	Corner(group, 8)
 	Stroke(group, accent, 1.5, 0.3)
 
@@ -287,55 +280,26 @@ function Library:Notify(cfg)
 	local dot = Create("Frame", { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 0, 0.5, 0), Size = UDim2.fromOffset(6, 6), BackgroundColor3 = accent, BorderSizePixel = 0, Parent = head })
 	Corner(dot, 3)
 	Create("TextLabel", { Position = UDim2.fromOffset(12, 0), Size = UDim2.new(1, -20, 1, 0), BackgroundTransparency = 1, Text = cfg.Title or "Notification", TextColor3 = T.Text, TextSize = 13, Font = T.FontBold, TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = head })
+	Create("TextLabel", { Position = UDim2.fromOffset(12, 30), Size = UDim2.new(1, -24, 0, 18), BackgroundTransparency = 1, Text = cfg.Text or "", TextColor3 = T.TextDim, TextSize = 11, Font = T.Font, TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = group })
 
-	Create("TextLabel", {
-		Position = UDim2.fromOffset(12, 30),
-		Size = UDim2.new(1, -24, 0, 18),
-		BackgroundTransparency = 1,
-		Text = cfg.Text or "",
-		TextColor3 = T.TextDim,
-		TextSize = 11,
-		Font = T.Font,
-		TextXAlignment = Enum.TextXAlignment.Left,
-		TextTruncate = Enum.TextTruncate.AtEnd,
-		Parent = group
-	})
-
-	local prog = Create("Frame", {
-		AnchorPoint = Vector2.new(0, 1),
-		Position = UDim2.new(0, 0, 1, 0),
-		Size = UDim2.new(1, 0, 0, 2),
-		BackgroundColor3 = accent,
-		BackgroundTransparency = 0.4,
-		BorderSizePixel = 0,
-		Parent = group
-	})
+	local prog = Create("Frame", { AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 0, 1, 0), Size = UDim2.new(1, 0, 0, 2), BackgroundColor3 = accent, BackgroundTransparency = 0.4, BorderSizePixel = 0, Parent = group })
 	Corner(prog, 2)
 	local fillProg = Create("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = accent, BorderSizePixel = 0, Parent = prog })
 	Corner(fillProg, 2)
-
 	Tween(fillProg, { Size = UDim2.fromScale(0, 1) }, dur, "Linear")
 
 	local clickBtn = Create("TextButton", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Text = "", Parent = group })
-	clickBtn.MouseButton1Click:Connect(function()
-		Tween(group, { Position = UDim2.new(1, 300, 0, 0), GroupTransparency = 1 }, 0.3, "Smooth")
-		task.wait(0.3)
-		group:Destroy()
-	end)
+	clickBtn.MouseButton1Click:Connect(function() Tween(group, { Position = UDim2.new(1, 300, 0, 0), GroupTransparency = 1 }, 0.3, "Smooth"); task.wait(0.3); group:Destroy() end)
 
 	task.delay(dur, function()
-		if group and group.Parent then
-			Tween(group, { Position = UDim2.new(1, 300, 0, 0), GroupTransparency = 1 }, 0.3, "Smooth")
-			task.wait(0.3)
-			group:Destroy()
-		end
+		if group and group.Parent then Tween(group, { Position = UDim2.new(1, 300, 0, 0), GroupTransparency = 1 }, 0.3, "Smooth"); task.wait(0.3); group:Destroy() end
 	end)
 end
 
 --=========================  WINDOW  ===================================
 function Library:CreateWindow(config)
 	config = config or {}
-	local win = setmetatable({ Config = config, Tabs = {}, Flags = {} }, { __index = self })
+	local win = setmetatable({ Config = config, Tabs = {}, Flags = {}, Toggles = {} }, { __index = self })
 	win.Notify = function(_, cfg) self:Notify(cfg) end
 	self.Windows[#self.Windows + 1] = win
 	win:_Build()
@@ -402,18 +366,24 @@ function Library:_Build()
 	local rail = Create("Frame", { Name = "Rail", Position = UDim2.fromOffset(0, 57), Size = UDim2.new(0, 160, 1, -57), BackgroundTransparency = 1, ZIndex = 5, Parent = main })
 	self.Rail = rail
 
-	local tabArea = Create("Frame", { Name = "TabArea", Position = UDim2.fromOffset(10, 10), Size = UDim2.new(1, -20, 1, -110), BackgroundTransparency = 1, ZIndex = 5, Parent = rail })
+	local tabArea = Create("Frame", { Name = "TabArea", Position = UDim2.fromOffset(10, 10), Size = UDim2.new(1, -20, 1, -150), BackgroundTransparency = 1, ZIndex = 5, Parent = rail })
 	Create("UIListLayout", { Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder, Parent = tabArea })
 	self.TabArea = tabArea
 
-	local bottomArea1 = Create("Frame", { Name = "BottomArea1", Position = UDim2.new(0, 10, 1, -88), Size = UDim2.new(1, -20, 0, 36), BackgroundTransparency = 1, ZIndex = 5, Parent = rail })
+	-- We need 3 bottom areas now (Quick Buttons, Presets, Settings)
+	local bottomArea1 = Create("Frame", { Name = "BottomArea1", Position = UDim2.new(0, 10, 1, -130), Size = UDim2.new(1, -20, 0, 36), BackgroundTransparency = 1, ZIndex = 5, Parent = rail })
 	Create("UIListLayout", { Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder, Parent = bottomArea1 })
 	self.BottomArea1 = bottomArea1
 
-	local bottomArea2 = Create("Frame", { Name = "BottomArea2", Position = UDim2.new(0, 10, 1, -46), Size = UDim2.new(1, -20, 0, 36), BackgroundTransparency = 1, ZIndex = 5, Parent = rail })
+	local bottomArea2 = Create("Frame", { Name = "BottomArea2", Position = UDim2.new(0, 10, 1, -88), Size = UDim2.new(1, -20, 0, 36), BackgroundTransparency = 1, ZIndex = 5, Parent = rail })
 	Create("UIListLayout", { Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder, Parent = bottomArea2 })
 	self.BottomArea2 = bottomArea2
 
+	local bottomArea3 = Create("Frame", { Name = "BottomArea3", Position = UDim2.new(0, 10, 1, -46), Size = UDim2.new(1, -20, 0, 36), BackgroundTransparency = 1, ZIndex = 5, Parent = rail })
+	Create("UIListLayout", { Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder, Parent = bottomArea3 })
+	self.BottomArea3 = bottomArea3
+
+	Create("Frame", { Position = UDim2.new(0, 10, 1, -135), Size = UDim2.new(1, -20, 0, 1), BackgroundColor3 = T.Stroke, BackgroundTransparency = 0.5, BorderSizePixel = 0, ZIndex = 5, Parent = rail })
 	Create("Frame", { Position = UDim2.new(0, 10, 1, -93), Size = UDim2.new(1, -20, 0, 1), BackgroundColor3 = T.Stroke, BackgroundTransparency = 0.5, BorderSizePixel = 0, ZIndex = 5, Parent = rail })
 	Create("Frame", { Position = UDim2.new(0, 10, 1, -51), Size = UDim2.new(1, -20, 0, 1), BackgroundColor3 = T.Stroke, BackgroundTransparency = 0.5, BorderSizePixel = 0, ZIndex = 5, Parent = rail })
 	Create("Frame", { Position = UDim2.fromOffset(160, 57), Size = UDim2.new(0, 1, 1, -57), BackgroundColor3 = T.Stroke, BackgroundTransparency = 0.5, BorderSizePixel = 0, ZIndex = 5, Parent = main })
@@ -488,12 +458,114 @@ function Library:_Build()
 		if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then dragging = false end
 	end)
 
-	-- SETTINGS TAB
-	local SettingsTab = self:Tab("Settings", "⚙️", 1)
+	--=========================================================
+	-- PINNED TABS
+	--=========================================================
+	
+	-- Quick Buttons Tab (Bottom 1)
+	local QuickButtonsTab = self:Tab("Quick Buttons", "⚡", 1)
+	local QuickGrid = Create("Frame", { Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1, Parent = QuickButtonsTab.Columns[1].Parent })
+	QuickGrid.Position = UDim2.fromOffset(10, 10)
+	QuickGrid.Size = UDim2.new(1, -20, 1, -20)
+	Create("UIGridLayout", { CellSize = UDim2.fromOffset(72, 72), CellPadding = UDim2.fromOffset(8, 8), SortOrder = Enum.SortOrder.LayoutOrder, Parent = QuickGrid })
+	self.QuickButtonsTab = QuickButtonsTab
+	self.QuickGrid = QuickGrid
+
+	-- Presets Tab (Bottom 2)
+	local PresetsTab = self:Tab("Presets", "💾", 2)
+	local SaveSec = PresetsTab:Section({ Name = "Save New Preset", Side = "Left" })
+	local LoadSec = PresetsTab:Section({ Name = "Your Presets", Side = "Right" })
+	self.PresetsTab = PresetsTab
+
+	-- Settings Tab (Bottom 3)
+	local SettingsTab = self:Tab("Settings", "⚙️", 3)
 	local SettingsSec = SettingsTab:Section({ Name = "UI Appearance", Side = "Left" })
 	local UtilitySec = SettingsTab:Section({ Name = "Utility", Side = "Right" })
 	self.SettingsTab = SettingsTab
 
+	-- Setup Quick Buttons Grid Header
+	local qbHeader = QuickButtonsTab:Section({ Name = "Floating HUDs", Side = "Right" })
+	Create("TextLabel", { Size = UDim2.new(1, 0, 0, 40), BackgroundTransparency = 1, Text = "Click a button below to spawn it on your screen. You can drag the floating icons around.", TextColor3 = T.TextDim, TextSize = 12, Font = T.Font, TextWrapped = true, Parent = qbHeader.Content })
+
+	--=========================================================
+	-- REGISTER QUICK BUTTON FUNCTION
+	--=========================================================
+	function self:RegisterToggle(name, icon, get, set)
+		local T = Library.Theme
+		local id = #self.Toggles + 1
+		local toggleData = { Name = name, Icon = icon, Get = get, Set = set, FloatBtn = nil }
+		self.Toggles[id] = toggleData
+
+		-- 1. Create the button in the Quick Buttons Tab
+		local btn = Create("TextButton", {
+			Name = "QB_" .. name, Size = UDim2.new(1, 0, 0, 36),
+			BackgroundColor3 = T.SurfaceAlt, BackgroundTransparency = 0.5,
+			Text = "Add " .. name, TextColor3 = T.Text, TextSize = 12, Font = T.FontBold,
+			AutoButtonColor = false, LayoutOrder = id, Parent = qbHeader.Content
+		})
+		Corner(btn, 8)
+		Stroke(btn, T.Stroke, 1, 0.5)
+
+		btn.MouseEnter:Connect(function() Tween(btn, { BackgroundColor3 = T.Accent, BackgroundTransparency = 0.7, TextColor3 = T.Accent }, 0.15) end)
+		btn.MouseLeave:Connect(function() Tween(btn, { BackgroundColor3 = T.SurfaceAlt, BackgroundTransparency = 0.5, TextColor3 = T.Text }, 0.15) end)
+
+		btn.MouseButton1Click:Connect(function()
+			if toggleData.FloatBtn then
+				toggleData.FloatBtn:Destroy()
+				toggleData.FloatBtn = nil
+				btn.Text = "Add " .. name
+			else
+				-- 2. Create the Floating Button
+				local floatBtn = Create("TextButton", {
+					Name = "Float_" .. name, Size = UDim2.fromOffset(70, 70),
+					Position = UDim2.new(0.5, 0, 0.5, 0), -- Spawn in center
+					BackgroundColor3 = T.Surface, BackgroundTransparency = 0.1,
+					Text = "", AutoButtonColor = false, ClipsDescendants = true,
+					ZIndex = 500, Parent = self.Gui
+				})
+				Corner(floatBtn, 12)
+				local fStroke = Stroke(floatBtn, get() and T.Accent or T.Stroke, 2, 0.2)
+				Create("UIGradient", { Color = Library.Gradients.Neon, Rotation = 45, Parent = floatBtn })
+
+				-- Icon (Middle)
+				local iconLbl = Create("TextLabel", { AnchorPoint = Vector2.new(0.5, 0.4), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(30, 30), BackgroundTransparency = 1, Text = icon or "⚙️", TextColor3 = Color3.new(1,1,1), TextSize = 24, Font = T.FontBlack, Parent = floatBtn })
+				
+				-- Name (Bottom)
+				Create("TextLabel", { AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -6), Size = UDim2.new(1, -4, 0, 14), BackgroundTransparency = 1, Text = name, TextColor3 = Color3.new(1,1,1), TextSize = 10, Font = T.FontBold, TextTruncate = Enum.TextTruncate.AtEnd, Parent = floatBtn })
+
+				-- Dragging Logic
+				local fDrag, fStart, fPos
+				floatBtn.InputBegan:Connect(function(i)
+					if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
+						fDrag, fStart, fPos = true, i.Position, floatBtn.Position
+					end
+				end)
+				UserInputService.InputChanged:Connect(function(i)
+					if not fDrag then return end
+					if i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch then
+						local d = i.Position - fStart
+						floatBtn.Position = UDim2.new(fPos.X.Scale, fPos.X.Offset + d.X, fPos.Y.Scale, fPos.Y.Offset + d.Y)
+					end
+				end)
+				UserInputService.InputEnded:Connect(function(i)
+					if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then fDrag = false end
+				end)
+
+				-- Click to Toggle
+				floatBtn.MouseButton1Click:Connect(function()
+					local newVal = not get()
+					set(newVal)
+					fStroke.Color = newVal and T.Accent or T.Stroke
+					Ripple(floatBtn, floatBtn.AbsoluteSize.X/2, floatBtn.AbsoluteSize.Y/2, T.Accent)
+				end)
+
+				toggleData.FloatBtn = floatBtn
+				btn.Text = "Remove " .. name
+			end
+		end)
+	end
+
+	-- Settings Setup
 	local currentShape = "Squircle"
 	local function ApplyShape()
 		local maxRadius = math.min(self.Main.AbsoluteSize.X, self.Main.AbsoluteSize.Y) / 2
@@ -563,12 +635,7 @@ function Library:_Build()
 	})
 	UtilitySec:Button({ Name = "Destroy UI", Callback = function() self.Gui:Destroy() end })
 
-	-- PRESETS TAB
-	local PresetsTab = self:Tab("Presets", "💾", 2)
-	local SaveSec = PresetsTab:Section({ Name = "Save New Preset", Side = "Left" })
-	local LoadSec = PresetsTab:Section({ Name = "Your Presets", Side = "Right" })
-	self.PresetsTab = PresetsTab
-
+	-- Presets Setup
 	local nameBox = SaveSec:Textbox({ Name = "Preset Name", Placeholder = "e.g., PvP Config" })
 	local listFrame = Create("Frame", { Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1, Parent = LoadSec.Content })
 	Create("UIListLayout", { Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder, Parent = listFrame })
@@ -596,9 +663,9 @@ function Library:_Build()
 			end
 			
 			miniBtn("Load", T.Accent, function()
-				local func = loadstring(code)
+				local func = loadstring or getgenv().loadstring
 				if func then
-					local success, data = pcall(func)
+					local success, data = pcall(func, code)
 					if success and type(data) == "table" then
 						for k, v in pairs(data) do
 							if Library.Elements[k] then
@@ -616,6 +683,7 @@ function Library:_Build()
 				local newCode = Serialize(Library.Flags)
 				Library.SavedPresets[name] = newCode
 				self:Notify({ Title = "Overwritten", Text = "Preset '" .. name .. "' overwritten.", Color = T.Success })
+				UpdatePresetList()
 			end)
 			
 			miniBtn("Copy", T.SurfaceHi, function() self:ShowPresetModal(name, code) end)
@@ -656,7 +724,8 @@ function Library:Tab(name, icon, bottomIndex)
 	local index = #self.Tabs + 1
 	local parent = self.TabArea
 	if bottomIndex == 1 then parent = self.BottomArea1
-	elseif bottomIndex == 2 then parent = self.BottomArea2 end
+	elseif bottomIndex == 2 then parent = self.BottomArea2
+	elseif bottomIndex == 3 then parent = self.BottomArea3 end
 
 	local button = Create("TextButton", { Name = (name .. "Tab"):gsub("%s+", ""), Size = UDim2.new(1, 0, 0, 36), BackgroundColor3 = T.SurfaceAlt, BackgroundTransparency = 1, Text = "", AutoButtonColor = false, ClipsDescendants = true, LayoutOrder = index, ZIndex = 5, Parent = parent })
 	Corner(button, 8)
@@ -754,9 +823,6 @@ function TabClass:Section(config)
 		end
 		Tween(arrow, { Rotation = self_sec.Collapsed and -90 or 0 }, 0.2)
 	end)
-	
-	frame.MouseEnter:Connect(function() Tween(stroke, { Color = T.Accent, Transparency = 0.3 }, 0.2) end)
-	frame.MouseLeave:Connect(function() Tween(stroke, { Color = T.Stroke, Transparency = 0.6 }, 0.2) end)
 
 	return self_sec
 end
@@ -796,10 +862,21 @@ function SectionClass:Toggle(cfg)
 		if not silent and cfg.Callback then task.spawn(cfg.Callback, val) end
 	end
 
-	row.MouseButton1Click:Connect(function() set(not val) end)
+	row.MouseButton1Click:Connect(function()
+		local p = row.AbsolutePosition
+		local m = UserInputService:GetMouseLocation()
+		Ripple(row, m.X - p.X, m.Y - p.Y, T.Accent)
+		set(not val)
+	end)
 	set(val, true)
 	
 	if cfg.Flag then Library.Elements[cfg.Flag] = { Set = set, Get = function() return val end } end
+
+	-- Register to Quick Buttons
+	if self.Window.RegisterToggle then
+		self.Window:RegisterToggle(cfg.Name, cfg.Icon, function() return val end, function(v) set(v) end)
+	end
+
 	return { Set = function(v) set(v, true) end, Get = function() return val end }
 end
 
@@ -872,6 +949,9 @@ function SectionClass:Button(cfg)
 	b.MouseEnter:Connect(function() Tween(b, { BackgroundColor3 = T.Accent, BackgroundTransparency = 0.7, TextColor3 = T.Accent }, 0.15); Tween(s, { Color = T.Accent, Transparency = 0.2 }, 0.15) end)
 	b.MouseLeave:Connect(function() Tween(b, { BackgroundColor3 = T.SurfaceAlt, BackgroundTransparency = 0.5, TextColor3 = T.Text }, 0.15); Tween(s, { Color = T.Stroke, Transparency = 0.5 }, 0.15) end)
 	b.MouseButton1Click:Connect(function()
+		local p = b.AbsolutePosition
+		local m = UserInputService:GetMouseLocation()
+		Ripple(b, m.X - p.X, m.Y - p.Y, T.Accent)
 		if cfg.Callback then task.spawn(cfg.Callback) end
 	end)
 	return { Fire = function() if cfg.Callback then task.spawn(cfg.Callback) end end }
@@ -900,6 +980,99 @@ function SectionClass:Textbox(cfg)
 	local obj = { Set = function(v) box.Text = tostring(v) end, Get = function() return box.Text end }
 	if cfg.Flag then Library.Elements[cfg.Flag] = obj end
 	return obj
+end
+
+function SectionClass:ColorPicker(cfg)
+	local T = Library.Theme
+	local o = self:_next()
+	local currentColor = cfg.Default or Color3.fromRGB(255, 255, 255)
+
+	local row = Create("TextButton", { Size = UDim2.new(1, 0, 0, 32), BackgroundTransparency = 1, Text = "", AutoButtonColor = false, LayoutOrder = o, ZIndex = 5, Parent = self.Content })
+	Create("TextLabel", { Size = UDim2.new(1, -60, 1, 0), BackgroundTransparency = 1, Text = cfg.Name or "Color Picker", TextColor3 = T.Text, TextSize = 13, Font = T.FontBold, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 6, Parent = row })
+	
+	local swatch = Create("Frame", { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, 0, 0.5, 0), Size = UDim2.fromOffset(44, 24), BackgroundColor3 = currentColor, BorderSizePixel = 0, ZIndex = 6, Parent = row })
+	Corner(swatch, 6)
+	Stroke(swatch, T.Stroke, 1, 0.5)
+
+	local overlay = Create("TextButton", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(0,0,0), BackgroundTransparency = 0.5, Text = "", Visible = false, ZIndex = 400, Parent = self.Window.Gui })
+	local modal = Create("Frame", { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(250, 250), BackgroundColor3 = T.Background, BorderSizePixel = 0, ZIndex = 401, Parent = self.Window.Gui, Visible = false })
+	Corner(modal, 12)
+	Stroke(modal, T.Accent, 1.5, 0.3)
+	Padding(modal, 15, 15, 15, 15)
+	
+	Create("TextLabel", { Size = UDim2.new(1, 0, 0, 20), BackgroundTransparency = 1, Text = "Pick a Color", TextColor3 = T.Text, TextSize = 14, Font = T.FontBold, Parent = modal })
+	
+	local hueBar = Create("Frame", { Position = UDim2.fromOffset(0, 35), Size = UDim2.new(1, 0, 0, 10), BackgroundColor3 = Color3.new(1,1,1), BorderSizePixel = 0, Parent = modal })
+	Corner(hueBar, 5)
+	Create("UIGradient", { Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)), ColorSequenceKeypoint.new(0.17, Color3.fromRGB(255, 255, 0)),
+		ColorSequenceKeypoint.new(0.33, Color3.fromRGB(0, 255, 0)), ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 255, 255)),
+		ColorSequenceKeypoint.new(0.67, Color3.fromRGB(0, 0, 255)), ColorSequenceKeypoint.new(0.83, Color3.fromRGB(255, 0, 255)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 0))
+	}), Parent = hueBar })
+	
+	local hueKnob = Create("Frame", { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0, 0, 0.5, 0), Size = UDim2.fromOffset(14, 14), BackgroundColor3 = Color3.new(1,1,1), Parent = hueBar })
+	Corner(hueKnob, 7); Stroke(hueKnob, T.Text, 2, 0)
+
+	local rBox = Create("TextBox", { Position = UDim2.fromOffset(0, 60), Size = UDim2.new(0.3, -4, 0, 24), BackgroundColor3 = T.SurfaceAlt, Text = tostring(math.floor(currentColor.R * 255)), TextColor3 = T.Text, TextSize = 12, Font = T.Font, BorderSizePixel = 0, Parent = modal })
+	local gBox = Create("TextBox", { Position = UDim2.fromOffset(0.33, 60), Size = UDim2.new(0.34, -4, 0, 24), BackgroundColor3 = T.SurfaceAlt, Text = tostring(math.floor(currentColor.G * 255)), TextColor3 = T.Text, TextSize = 12, Font = T.Font, BorderSizePixel = 0, Parent = modal })
+	local bBox = Create("TextBox", { Position = UDim2.fromOffset(0.67, 60), Size = UDim2.new(0.33, 0, 0, 24), BackgroundColor3 = T.SurfaceAlt, Text = tostring(math.floor(currentColor.B * 255)), TextColor3 = T.Text, TextSize = 12, Font = T.Font, BorderSizePixel = 0, Parent = modal })
+	for _, b in ipairs({rBox, gBox, bBox}) do Corner(b, 4); Padding(b, 0,0,5,5) end
+
+	local preview = Create("Frame", { Position = UDim2.fromOffset(0, 95), Size = UDim2.new(1, 0, 0, 40), BackgroundColor3 = currentColor, BorderSizePixel = 0, Parent = modal })
+	Corner(preview, 8); Stroke(preview, T.Stroke, 1, 0.5)
+	
+	local close = Create("TextButton", { Position = UDim2.fromOffset(0, 145), Size = UDim2.new(1, 0, 0, 30), BackgroundColor3 = T.Danger, Text = "Close", TextColor3 = Color3.new(1,1,1), TextSize = 13, Font = T.FontBold, BorderSizePixel = 0, Parent = modal })
+	Corner(close, 6)
+
+	local function updateColor()
+		local r = math.clamp(tonumber(rBox.Text) or 255, 0, 255) / 255
+		local g = math.clamp(tonumber(gBox.Text) or 255, 0, 255) / 255
+		local b = math.clamp(tonumber(bBox.Text) or 255, 0, 255) / 255
+		currentColor = Color3.new(r, g, b)
+		swatch.BackgroundColor3 = currentColor
+		preview.BackgroundColor3 = currentColor
+		if cfg.Flag then Library.Flags[cfg.Flag] = currentColor end
+		if cfg.Callback then task.spawn(cfg.Callback, currentColor) end
+	end
+
+	local hueDrag = false
+	hueBar.InputBegan:Connect(function(i)
+		if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
+			hueDrag = true
+			local rel = math.clamp((i.Position.X - hueBar.AbsolutePosition.X) / math.max(hueBar.AbsoluteSize.X, 1), 0, 1)
+			hueKnob.Position = UDim2.new(rel, 0, 0.5, 0)
+			local h = rel * 360
+			local col = Color3.fromHSV(h/360, 1, 1)
+			rBox.Text = tostring(math.floor(col.R * 255))
+			gBox.Text = tostring(math.floor(col.G * 255))
+			bBox.Text = tostring(math.floor(col.B * 255))
+			updateColor()
+		end
+	end)
+	UserInputService.InputChanged:Connect(function(i)
+		if not hueDrag then return end
+		if i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch then
+			local rel = math.clamp((i.Position.X - hueBar.AbsolutePosition.X) / math.max(hueBar.AbsoluteSize.X, 1), 0, 1)
+			hueKnob.Position = UDim2.new(rel, 0, 0.5, 0)
+			local h = rel * 360
+			local col = Color3.fromHSV(h/360, 1, 1)
+			rBox.Text = tostring(math.floor(col.R * 255))
+			gBox.Text = tostring(math.floor(col.G * 255))
+			bBox.Text = tostring(math.floor(col.B * 255))
+			updateColor()
+		end
+	end)
+	UserInputService.InputEnded:Connect(function() hueDrag = false end)
+
+	for _, b in ipairs({rBox, gBox, bBox}) do b.FocusLost:Connect(updateColor) end
+
+	row.MouseButton1Click:Connect(function() overlay.Visible = true; modal.Visible = true end)
+	close.MouseButton1Click:Connect(function() overlay.Visible = false; modal.Visible = false end)
+	overlay.MouseButton1Click:Connect(function() overlay.Visible = false; modal.Visible = false end)
+
+	if cfg.Flag then Library.Elements[cfg.Flag] = { Set = function(v) currentColor = v; swatch.BackgroundColor3 = v; updateColor() end, Get = function() return currentColor end } end
+	return { Set = function(v) currentColor = v; swatch.BackgroundColor3 = v; updateColor() end, Get = function() return currentColor end }
 end
 
 function SectionClass:Dropdown(cfg)
@@ -1150,23 +1323,59 @@ function Library:Destroy()
 end
 
 --=====================================================================
---  HOW TO USE THIS LIBRARY AS A SCRIPT (For people who just want to paste)
+--  AUTO-EXECUTION DEMO (Makes it work when pasted directly)
 --=====================================================================
--- If you paste this whole file directly into an executor and press Execute, 
--- it will just return the table and do nothing. If you want to test it, 
--- uncomment the code below.
+-- This block allows the library to instantly show a UI when pasted. 
+-- If you are a developer using this as a library, you can ignore this 
+-- or delete everything from here to the bottom.
 
---[[
-local TestWindow = Library:CreateWindow({ Title = "Nexus Test", Subtitle = "Working!" })
-local TestTab = TestWindow:Tab("Main", "🏠")
-local TestSec = TestTab:Section({ Name = "Test Section", Side = "Left" })
-
-TestSec:Button({ 
-	Name = "Say Hello", 
-	Callback = function() 
-		TestWindow:Notify({ Title = "Success", Text = "The UI works perfectly!", Color = Library.Theme.Success }) 
-	end 
+local DemoWindow = Library:CreateWindow({
+    Title = "NEXUS UI",
+    Subtitle = "Demo Mode",
+    IconId = 6031097226
 })
---]]
 
+local DemoTab = DemoWindow:Tab("Demo", "🏠")
+local DemoSec = DemoTab:Section({ Name = "Test Features", Side = "Left" })
+local QuickSec = DemoTab:Section({ Name = "Quick Buttons", Side = "Right" })
+
+-- Test Toggle (Will show up in Quick Buttons tab automatically)
+QuickSec:Toggle({
+    Name = "Quick Toggle",
+    Icon = "⚡",
+    Flag = "quick_toggle",
+    Callback = function(val)
+        print("Quick Toggle is now:", val)
+    end
+})
+
+-- Test Button
+DemoSec:Button({
+    Name = "Test Notification",
+    Callback = function()
+        DemoWindow:Notify({
+            Title = "Success",
+            Text = "The UI is functioning perfectly!",
+            Color = Library.Theme.Success
+        })
+    end
+})
+
+-- Test Color Picker
+DemoSec:ColorPicker({
+    Name = "Test Color",
+    Default = Color3.fromRGB(0, 240, 255),
+    Callback = function(c)
+        print("Color picked:", c)
+    end
+})
+
+DemoWindow:Notify({
+    Title = "NEXUS LOADED",
+    Text = "Library is active. Try the Quick Buttons!",
+    Color = Library.Theme.Accent,
+    Duration = 5
+})
+
+-- Return the Library so developers can still use it
 return Library
