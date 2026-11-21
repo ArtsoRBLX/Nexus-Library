@@ -1,5 +1,5 @@
 --=====================================================================
---  NEXUS UI LIBRARY  •  v7.5.1  •  Fixed Global Environment Error
+--  NEXUS UI LIBRARY  •  v7.5.1
 --=====================================================================
 
 local TweenService     = game:GetService("TweenService")
@@ -1321,11 +1321,8 @@ function Library:Destroy()
 end
 
 --=====================================================================
---  GLOBAL ENVIRONMENT FIX (This fixes the KVGD error)
+--  GLOBAL ENVIRONMENT FIX
 --=====================================================================
--- Other scripts often look for UI Libraries in _G or getgenv(). 
--- This makes sure your UI is available globally.
-
 getgenv().NexusUI = Library
 _G.NexusUI = Library
 
